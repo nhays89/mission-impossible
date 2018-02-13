@@ -1,7 +1,8 @@
 #include <iostream>
 #include <unordered_map>
-#include <unordered_set>
+#include <vector>
 #include <algorithm>
+
 using namespace std;
 
 static const int MAX = 100;
@@ -11,25 +12,26 @@ Can represent data in the row or column of the input matrix.
 Collects indexes for largest values.
 Stores largest value in row or column.
 */
-class Vector {
+class Obj {
   public: 
     vector<int> largest_indicies;
     int largest;
   public: 
-    Vector(size_t size, size_t largest, int values[]) {
-      largest = largest;
-      largest_indicies.resize(size);
+    Obj::Obj();
+    Obj(size_t size, size_t largest, int values[]) {
+      this->largest = largest;
+      this->largest_indicies.resize(size);
       copy(values, values + size, largest_indicies.begin());
-    };
+    }
 };
 
-long int compute_sum(unordered_map<int, Vector> rows, unordered_map<int, Vector> cols, int *matrix, int r, int c) {
+long int compute_sum(unordered_map<int, Obj> rows, unordered_map<int, Obj> cols, int *matrix, int r, int c) {
   int val = 0;
   long int sum = 0;
   for (int i = 0; i < r; i++) {
-    Vector row_obj = rows[i];
+    Obj row_obj = rows[i];
     for (int j = 0; j < c; j++) {
-      Vector col_obj = cols[j];
+      Obj col_obj = cols[j];
       val = matrix[i * c + j];
       if (val > 1 && 
         col_obj.largest_indicies[0] != i &&
@@ -43,14 +45,14 @@ long int compute_sum(unordered_map<int, Vector> rows, unordered_map<int, Vector>
 }
 
 
-void compute_col_largest(unordered_map<int, Vector> rows, unordered_map<int, Vector> cols, int *matrix, int r, int c) {
-  unordered_map<int, Vector>::iterator it;
+void compute_col_largest(unordered_map<int, Obj>& rows, unordered_map<int, Obj> &cols, int *matrix, int r, int c) {
+  unordered_map<int, Obj>::iterator it;
   for (it = cols.begin(); it != cols.end(); it++) {
-    Vector col = it->second;
+    Obj &col = it->second;
     bool found = false;
     if (col.largest_indicies.size() > 1) {
       for (int index : col.largest_indicies) {
-        Vector row = rows[index];
+        Obj row = rows[index];
         if (row.largest_indicies.size() == 1 && row.largest == col.largest) {
           col.largest_indicies.clear();
           col.largest_indicies.push_back(index);
@@ -68,20 +70,21 @@ void compute_col_largest(unordered_map<int, Vector> rows, unordered_map<int, Vec
   }
 }
 
-void compute_row_largest(unordered_map<int, Vector> rows, unordered_map<int, Vector> cols, int *matrix, int r, int c) {
-  unordered_map<int, Vector>::iterator it;
+void compute_row_largest(unordered_map<int, Obj> &rows, unordered_map<int, Obj> &cols, int *matrix, int r, int c) {
+  unordered_map<int, Obj>::iterator it;
   for (it = rows.begin(); it != rows.end(); it++) { //isolate each row's largest value, if multiple indexes with largest value, select an index where the col is largest, if none, choose arbitrarily
-    Vector row = it->second;
+    Obj &row = it->second;
     bool found = false;
     int row_size = row.largest_indicies.size();
 
     if (row_size > 1) {
-      for (int i = 0; i < row_size; i++) {
-        Vector col = cols[i];
+      for (int i : row.largest_indicies) {
+        Obj col = cols[i];
         int col_size = col.largest_indicies.size();
         if (col_size == 1 && col.largest == row.largest) { //if largest in col
+          int largest_index = i;
           row.largest_indicies.clear();
-          row.largest_indicies.push_back(i);
+          row.largest_indicies.push_back(largest_index);
           found = true;
           break;					
         }
@@ -96,50 +99,52 @@ void compute_row_largest(unordered_map<int, Vector> rows, unordered_map<int, Vec
 
 }
 
-void get_col_data(int r, int c, unordered_map<int, Vector> &rows, unordered_map<int, Vector> &cols, int * matrix) {
+void get_col_data(int r, int c, unordered_map<int, Obj> &cols, int * matrix) {
   int val = 0;
-  int temp[MAX];
+  int buff[MAX];
   for (int j = 0; j < c; j++) {
-    int num_col_largest = 0;
+    int largest_col_index = 0;
     int largest = 0;
     for (int i = 0; i < r; i++) {
       val = matrix[i * c + j];
       if (val > largest) {
         largest = val;
-        num_col_largest = 0;
-        temp[num_col_largest] = i;
+        largest_col_index = 0;
+        buff[largest_col_index] = i;
+        largest_col_index++;
       }
       else if (val == largest) {
-        temp[num_col_largest] = i;
+        buff[largest_col_index] = i;
+        largest_col_index++;
       }
-      num_col_largest++;
     }
-    Vector col_obj(num_col_largest, largest, temp);
-    rows[j] = col_obj;
+    Obj col_obj(largest_col_index, largest, buff);
+    cols[j] = col_obj;
   }
 }
 
-void get_row_data(int r, int c, unordered_map<int, Vector> &rows, unordered_map<int, Vector> &cols, int * matrix) {
-
+void get_row_data(int r, int c, unordered_map<int, Obj> &rows, int * matrix) {
   int val = 0;
-  int temp[MAX];
+  int buff[MAX];
   for (int i = 0; i < r; i++) {
-    int num_row_largest = 0;
+    int largest_row_index = 0;
     int largest = 0;
     for (int j = 0; j < c; j++) {
       val = matrix[i * c + j];
-      Vector col_obj = cols[j];
+      //Obj col_obj = cols[j];
       if (val > largest) {
         largest = val;
-        num_row_largest = 0;
-        temp[num_row_largest] = i;
+        largest_row_index = 0;
+        buff[largest_row_index] = j;
+        largest_row_index++;
       }
       else if (val == largest) {
-        temp[num_row_largest] = i;
+        buff[largest_row_index] = j;
+        largest_row_index++;
       }
-      num_row_largest++;
+      
     }
-    Vector row_obj(num_row_largest, largest, temp);
+    Obj row_obj(largest_row_index, largest, buff);
     rows[i] = row_obj;
   }
 }
@@ -156,18 +161,25 @@ void parse_input(int r, int c, int *matrix) {
 
 int main() {
   int r, c;
-  cin >> r;
+  int ch = 0;
+  unordered_map<int, Obj> rows;
+  unordered_map<int, Obj> cols;
+   
+  while (cin >> r) {
+  
   cin >> c;
-  unordered_map<int, Vector> rows;
-  unordered_map<int, Vector> cols;
-  int *matrix = (int *)malloc(sizeof(int *) * r * c);
+  int *matrix = (int *)malloc(sizeof(int) * r * c);
+  rows.clear();
+  cols.clear();
   parse_input(r, c, matrix);
-  get_row_data(r, c, rows, cols, matrix);
-  get_col_data(r, c, rows, cols, matrix);
+  get_row_data(r, c, rows, matrix);
+  get_col_data(r, c, cols, matrix);
   compute_row_largest(rows, cols, matrix, r, c);
   compute_col_largest(rows, cols, matrix, r, c);
   cout << compute_sum(rows, cols, matrix, r, c) << endl;
+  }
 }
 
-
-
+Obj::Obj()
+{
+}
