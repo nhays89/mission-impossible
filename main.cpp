@@ -11,8 +11,7 @@ typedef struct node {
 
 unsigned long long int total;
 int r, c;
-
-std::vector<int> mtrx, mtrx_exp; 
+std::vector<int> mtrx, mtrx_exp;
 std::vector<std::pair<int, int>> stk;
 std::unordered_map<int, Node> c_map;
 std::unordered_map<int, Node> r_map;
@@ -138,8 +137,8 @@ int main() {
     stk.clear();
     fill();
     std::copy(mtrx.begin(), mtrx.end(), mtrx_exp.begin());
+    expand();
     process();
     std::cout << total << std::endl;
   }
-  
 }
