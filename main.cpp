@@ -12,44 +12,48 @@ typedef struct node {
 unsigned long long int total;
 int r, c;
 std::vector<int> mtrx, mtrx_exp;
-std::vector<std::pair<int, int>> stk;
+static std::vector<std::pair<int, int>> stk;
 std::unordered_map<int, Node> c_map;
 std::unordered_map<int, Node> r_map;
 
-
-bool rmv(bool &r_is, bool &c_is, int val, int &r_cnt, int &c_cnt, int &r_max, int&c_max) {
+bool rmv(const int i, const int j, int val, int r_cnt, int c_cnt, int r_max, int c_max) {
+  bool r_is = r_map[i].is;
+  bool c_is = c_map[j].is;
   bool ret;
   if (r_is && c_is || val < r_max && val < c_max) {
     ret = true;
   }
   else if ((r_is || val < r_max) && c_cnt > 1) {
-    c_cnt--;
+    c_map[j].count--;
     ret = true;
   }
   else if ((c_is || val < c_max) && r_cnt > 1) {
-    r_cnt--;
+    r_map[i].count--;
     ret = true;
   }
   return ret;
 }
+//#pragma optimize("", off)
 
+void resolve(const int i, const int j, const int val, bool down) {
 
-void resolve(int &i, int &j, const int &val, bool down) {
+  int r_max = r_map[i].max;
+  int c_max = c_map[j].max;
+  int c_cnt = c_map[j].count;
+  int r_cnt = r_map[i].count;
 
-  int &r_max = r_map[i].max, &c_max = c_map[j].max, &c_cnt = c_map[j].count, &r_cnt = r_map[i].count;
-  bool &r_is = r_map[i].is, &c_is = c_map[j].is;
-  if (rmv(r_is, c_is, val, r_cnt, c_cnt, r_max, c_max)) { 
+  if (rmv(i,j, val, r_cnt, c_cnt, r_max, c_max)) { 
     if (mtrx[i * c + j] > 0) total -= 1;
   }
   else if(val == r_max && r_cnt == 1) { 
     total -= val;
-    r_is = true;
-    if (val == c_max) c_is = true;
+    r_map[i].is = true;
+    if (val == c_max) c_map[j].is = true;
   }
   else if (val == c_max && c_cnt == 1) {
     total -= val;
-    c_is = true;
-    if (val == r_max) r_is = true;
+    c_map[j].is = true;
+    if (val == r_max) r_map[i].is = true;
   }
   else {
     if (down) {
@@ -57,27 +61,27 @@ void resolve(int &i, int &j, const int &val, bool down) {
     }
     else {
       total -= val;
-      r_is = true;
-      c_is = true;
+      r_map[i].is = true;
+      c_map[j].is = true;
     }
-     
   }
 }
-
+#pragma optimize("", on)
 void traverse_up() {
   while (!stk.empty()) {
     std::pair<int, int> p = stk.back();
-    int &i = p.first;
-    int &j = p.second;
+    int i = p.first;
+    int j = p.second;
     resolve(i, j, mtrx_exp[i * c + j], false);
     stk.pop_back();
   }
 }
 
+
 void traverse_down() {
   for (int i = 0; i < r; i++) {
     for (int j = 0; j < c; j++) {
-      int &val = mtrx_exp[i * c + j];
+      int val = mtrx_exp[i * c + j];
       resolve(i, j, val, true);
     }
   }
@@ -87,6 +91,7 @@ void process() {
   traverse_down();
   traverse_up(); 
 }
+
 
 void expand() {
   for (int i = 0; i < r; i++) {
@@ -100,6 +105,7 @@ void expand() {
     }
   }
 }
+
 
 void fill() {
   int val;
